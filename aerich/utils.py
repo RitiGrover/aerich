@@ -16,6 +16,7 @@ from pathlib import Path
 from types import ModuleType
 from typing import Any, TypeVar, cast
 
+import sqlparse
 from anyio import from_thread
 from asyncclick import BadOptionUsage, ClickException, Context
 from dictdiffer import diff
@@ -66,8 +67,12 @@ def split_sql_statements(script: str) -> list[str]:
     with two or more of them fails with e.g. "CREATE INDEX CONCURRENTLY
     cannot run inside a transaction block" as soon as they're sent
     together, even though each one works fine on its own.
+
+    ``sqlparse`` does the splitting, so a semicolon inside a string, a comment
+    or a dollar-quoted block doesn't end a statement.
     """
-    return [statement.strip() for statement in script.split(";") if statement.strip()]
+    statements = sqlparse.split(script, strip_semicolon=True)
+    return [statement for statement in statements if statement.strip()]
 
 
 def get_app_connection_name(config: dict[str, dict[str, Any]], app_name: str) -> str:

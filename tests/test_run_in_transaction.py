@@ -18,6 +18,16 @@ def test_split_sql_statements() -> None:
         "DROP INDEX CONCURRENTLY idx_b",
     ]
     assert split_sql_statements("  ;  ; ") == []
+    assert split_sql_statements("INSERT INTO t VALUES ('a;b'); SELECT 2;") == [
+        "INSERT INTO t VALUES ('a;b')",
+        "SELECT 2",
+    ]
+    assert split_sql_statements("-- a; b\nSELECT 1; /* c; d */ SELECT 2") == [
+        "-- a; b\nSELECT 1",
+        "/* c; d */ SELECT 2",
+    ]
+    function = "CREATE FUNCTION f() RETURNS int AS $$ BEGIN RETURN 1; END; $$ LANGUAGE plpgsql"
+    assert split_sql_statements(f"{function}; SELECT 1;") == [function, "SELECT 1"]
     assert split_sql_statements("") == []
     assert split_sql_statements("SELECT 1") == ["SELECT 1"]
 
